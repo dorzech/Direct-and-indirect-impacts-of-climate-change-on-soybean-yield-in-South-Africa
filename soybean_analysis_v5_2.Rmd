@@ -1,0 +1,1145 @@
+---
+title: "Direct and indirect impacts of climate change on soybean yields in South Africa"
+output:
+  pdf_document:
+    toc: true
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE,
+                      fig.width = 9, fig.height = 6, dpi = 300, dev = "png",
+                      fig.path = "figures_v5_2/")
+options(timeout = 600)
+```
+
+# 0. Preamble
+
+```{r libraries}
+library(tidyverse)
+library(sf)
+library(terra)
+library(rgbif)
+library(CoordinateCleaner)
+library(randomForest)
+library(mgcv)
+library(maxnet)
+library(pROC)
+library(knitr)
+
+set.seed(123)
+
+AFRICA_AEA <- "ESRI:102022"
+yield_floor <- 0.1
+FLOOR_LABEL <- sprintf("Baseline yield below %g t/ha", yield_floor)
+
+source("soybean_functions_v52.R")
+```
+
+```{r palettes}
+RISK_COLS <- setNames(
+  c("grey95", "grey82", "#2C7BB6", "#FDAE61", "#ABD9E9", "#D7191C"),
+  c("Not assessed", FLOOR_LABEL, "No projected decline in either",
+    "Richness decline only", "Yield decline only", "Both decline")
+)
+
+GAIN_COLS <- setNames(
+  c("grey95", "grey85", "grey65", "#2C7BB6", "#D7191C"),
+  c("Not assessed", FLOOR_LABEL, "No projected gain",
+    "Gain without richness decline", "Gain with richness decline")
+)
+```
+
+```{r paths}
+PATH_SOY_CSV <- "./soybean/soy_data.csv"
+PATH_CATCH_SHP <- "./soybean/with_ids_wgs_84/with_ids_wgs_84.shp"
+PATH_MILLARD_RDS <- "./global_pollinator_dataset-v1.1/Joemillard-global_pollinator_dataset-b89d6ab/data/outputs/07_PREDICTS_pollinators_exp.rds"
+PATH_BACKBONE_OLD <- "./gbif_download/backbone_matches_v2.csv"
+PATH_BEE_SUPP <- "./gbif_download/bee_records_genus_v2_supplement.rds"
+PATH_GBIF_META_SUPP <- "./gbif_download/gbif_download_meta_v2_supplement.rds"
+CLIM_CURRENT_DIR <- "./clim_wc14/current"
+CLIM_FUTURE_ROOT <- "./clim_wc14/rcp85_2070"
+
+INCLUDE_SPECIMENS <- FALSE  # TRUE: sensitivity run with preserved specimens
+
+if (INCLUDE_SPECIMENS) {
+  PATH_BEE_DATA <- "./gbif_download/bee_records_genus_v3_specimens.rds"
+  PATH_GBIF_META <- "./gbif_download/gbif_download_meta_v3_specimens.rds"
+  ALLOWED_BASIS <- c("HUMAN_OBSERVATION", "MACHINE_OBSERVATION",
+                     "PRESERVED_SPECIMEN", "MATERIAL_SAMPLE")
+} else {
+  PATH_BEE_DATA <- "./gbif_download/bee_records_genus_v2.rds"
+  PATH_GBIF_META <- "./gbif_download/gbif_download_meta_v2.rds"
+  ALLOWED_BASIS <- c("HUMAN_OBSERVATION", "MACHINE_OBSERVATION", "LIVING_SPECIMEN")
+}
+```
+
+---
+
+# 1. Soybean yield data
+
+## 1.1 Read
+
+```{r read-yield}
+soy_data <- read_csv(PATH_SOY_CSV, show_col_types = FALSE)
+catchments <- st_read(PATH_CATCH_SHP, quiet = TRUE)
+```
+
+## 1.2 Filter, recode and aggregate
+
+```{r yield-aggregate}
+soy_gcm <- soy_data %>%
+  filter(crop == "sybdry", variable == "yld", statistic == "ave") %>%
+  filter(years %in% c(196190, 201544, 207099)) %>%
+  mutate(window = case_when(
+    years == 196190 ~ "Baseline",
+    years == 201544 ~ "NearTerm",
+    years == 207099 ~ "LateCentury"
+  )) %>%
+  group_by(sub_cat, gcm, window) %>%
+  summarise(yield = mean(as.numeric(value), na.rm = TRUE), .groups = "drop")
+
+SOY_GCM_MAP <- c(ACCESS1_0 = "acc085", CCSM4 = "ccs085", CNRM_CM5 = "cnr085",
+                 GFDL_CM3 = "gfd085", MPI_ESM_LR = "mpi085", NorESM1_M = "nor085")
+stopifnot(all(SOY_GCM_MAP %in% soy_gcm$gcm))
+
+gcm_per_cell <- soy_gcm %>% count(sub_cat, window)
+stopifnot(all(gcm_per_cell$n == length(SOY_GCM_MAP)))
+
+yield_by_gcm <- soy_gcm %>%
+  filter(window %in% c("Baseline", "LateCentury")) %>%
+  pivot_wider(names_from = window, values_from = yield) %>%
+  mutate(gcm_name = names(SOY_GCM_MAP)[match(gcm, SOY_GCM_MAP)],
+         yield_gain_gcm = !is.na(Baseline) & Baseline >= yield_floor & LateCentury > Baseline) %>%
+  select(sub_cat, gcm_name, yield_gain_gcm)
+
+soy_long <- soy_gcm %>%
+  group_by(sub_cat, window) %>%
+  summarise(
+    yld_mean = mean(yield, na.rm = TRUE),
+    yld_sd = sd(yield, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+soy_wide <- soy_long %>%
+  pivot_wider(
+    names_from = window,
+    values_from = c(yld_mean, yld_sd),
+    names_glue = "{window}_{.value}"
+  )
+```
+
+## 1.3 Spatial join
+
+```{r yield-join}
+names(catchments)[tolower(names(catchments)) == "sub_cat"] <- "sub_cat"
+catchments$sub_cat <- trimws(as.character(catchments$sub_cat))
+catchments <- catchments %>%
+  group_by(sub_cat) %>%
+  summarise(.groups = "drop")
+
+soy_wide$sub_cat <- trimws(as.character(soy_wide$sub_cat))
+
+join_diag <- tibble(
+  matched_sub_cat = length(intersect(catchments$sub_cat, soy_wide$sub_cat)),
+  in_yield_not_in_shp = length(setdiff(soy_wide$sub_cat, catchments$sub_cat)),
+  in_shp_not_in_yield = length(setdiff(catchments$sub_cat, soy_wide$sub_cat))
+)
+kable(join_diag, caption = "Catchment join summary.")
+stopifnot(join_diag$in_shp_not_in_yield == 0)
+
+map_yields <- left_join(catchments, soy_wide, by = "sub_cat")
+
+area_m2 <- as.numeric(st_area(st_transform(map_yields, AFRICA_AEA)))
+total_area_km2 <- sum(area_m2) / 1e6
+```
+
+## 1.4 Change metrics
+
+```{r yield-changes}
+map_yields <- map_yields %>%
+  mutate(
+    diff_late_baseline = LateCentury_yld_mean - Baseline_yld_mean,
+    pct_change_late = ifelse(
+      Baseline_yld_mean >= yield_floor,
+      100 * (LateCentury_yld_mean - Baseline_yld_mean) / Baseline_yld_mean,
+      NA_real_
+    )
+  )
+
+interpretable_area <- sum(area_m2[!is.na(map_yields$pct_change_late)]) / 1e6
+
+yield_summary <- soy_wide %>%
+  filter(sub_cat %in% map_yields$sub_cat) %>%
+  summarise(
+    Baseline_mean = mean(Baseline_yld_mean, na.rm = TRUE),
+    NearTerm_mean = mean(NearTerm_yld_mean, na.rm = TRUE),
+    LateCentury_mean = mean(LateCentury_yld_mean, na.rm = TRUE),
+    Baseline_SD = mean(Baseline_yld_sd, na.rm = TRUE),
+    NearTerm_SD = mean(NearTerm_yld_sd, na.rm = TRUE),
+    LateCentury_SD = mean(LateCentury_yld_sd, na.rm = TRUE)
+  )
+
+kable(yield_summary, digits = 3, caption = "Mean yield and between-GCM SD (t/ha).")
+
+yield_summary_weighted <- map_yields %>%
+  st_drop_geometry() %>%
+  summarise(across(c(Baseline_yld_mean, NearTerm_yld_mean, LateCentury_yld_mean),
+                   ~ weighted.mean(.x, area_m2, na.rm = TRUE)))
+kable(yield_summary_weighted, digits = 3, caption = "Area-weighted mean yield (t/ha).")
+```
+
+## 1.5 Yield maps
+
+```{r yield-maps, fig.height=5}
+yield_breaks <- commonBreaks(map_yields$Baseline_yld_mean,
+                             map_yields$LateCentury_yld_mean, n = 10)
+
+plot(map_yields["Baseline_yld_mean"],
+     main = "Soybean yield 1961-1990 (t/ha)",
+     pal = palSeq, breaks = yield_breaks, border = NA)
+
+plot(map_yields["LateCentury_yld_mean"],
+     main = "Soybean yield 2070-2099 (t/ha)",
+     pal = palSeq, breaks = yield_breaks, border = NA)
+
+plot(map_yields["diff_late_baseline"],
+     main = "Yield change, 2070-2099 minus 1961-1990 (t/ha)",
+     pal = palDiv, breaks = symBreaks(map_yields$diff_late_baseline, n = 10),
+     border = NA)
+
+plot(map_yields["LateCentury_yld_sd"],
+     main = "Between-GCM SD of yield, 2070-2099 (t/ha)",
+     pal = palSeq, border = NA, nbreaks = 10)
+```
+
+---
+
+# 2. Climate data: WorldClim 1.4 (CMIP5, RCP8.5)
+
+## 2.1 Configuration
+
+```{r climate-config}
+sdm_ext <- terra::ext(-18, 52, -35, 0)
+candidate_vars <- c("bio1", "bio4", "bio5", "bio6", "bio12", "bio15")
+
+GCM_CODES <- c(ACCESS1_0 = "ac", CCSM4 = "cc", CNRM_CM5 = "cn", GFDL_CM3 = "gf",
+               MPI_ESM_LR = "mp", NorESM1_M = "no")
+missing_gcm <- GCM_CODES[!dir.exists(file.path(CLIM_FUTURE_ROOT, GCM_CODES))]
+if (length(missing_gcm) > 0) {
+  stop("Missing future climate folders: ", paste(missing_gcm, collapse = ", "))
+}
+```
+
+## 2.2 Current climate and predictor selection
+
+```{r climate-hist}
+clim_cand <- readBioclimDir(CLIM_CURRENT_DIR, candidate_vars)
+cand_vals <- as.data.frame(terra::spatSample(clim_cand, 5000, na.rm = TRUE))
+
+cor_mat <- cor(cand_vals, method = "pearson")
+kable(round(cor_mat, 2), caption = "Correlations between candidate predictors (5000 cells).")
+
+vif_cand <- vifOf(cand_vals)
+kable(tibble(variable = names(vif_cand), vif = round(vif_cand, 2)),
+      caption = "VIF, candidate predictors.")
+
+predictor_vars <- c("bio5", "bio6", "bio12", "bio15")
+
+vif_vals <- vifOf(cand_vals[, predictor_vars])
+kable(tibble(variable = names(vif_vals), vif = round(vif_vals, 2)),
+      caption = "VIF, retained predictors.")
+stopifnot(all(vif_vals < 5))
+
+clim_hist <- clim_cand[[predictor_vars]]
+res_deg <- terra::res(clim_hist)[1]
+cat("Grid resolution (degrees):", res_deg, "\n")
+```
+
+## 2.3 Future climate (RCP8.5, 2061-2080)
+
+```{r climate-future}
+clim_futs <- setNames(
+  lapply(GCM_CODES, loadFutureCmip5, template = clim_hist,
+         root = CLIM_FUTURE_ROOT, predictors = predictor_vars),
+  names(GCM_CODES)
+)
+```
+
+---
+
+# 3. Wild-pollinator community pool
+
+## 3.1 Bee genera from the Millard list
+
+```{r millard}
+millard_raw <- readRDS(PATH_MILLARD_RDS)
+
+BEE_FAMILIES <- c("Apidae", "Megachilidae", "Halictidae",
+                  "Andrenidae", "Colletidae", "Melittidae")
+
+millard_bees <- millard_raw %>%
+  filter(Class == "Insecta", Family %in% BEE_FAMILIES, Genus != "Apis") %>%
+  distinct(family = Family, genus = Genus) %>%
+  filter(!is.na(genus), genus != "")
+
+cat("Genera:", nrow(millard_bees), "\n")
+millard_bees %>% count(family, sort = TRUE) %>%
+  kable(caption = "Bee genera by family.")
+```
+
+## 3.2 Configuration
+
+```{r gbif-config}
+MAX_COORD_UNC_M <- 10000
+MIN_RECORDS <- 30L
+YEAR_MIN <- 1970L
+SDM_WKT <- "POLYGON((-18 -35, 52 -35, 52 0, -18 0, -18 -35))"
+GBIF_BACKBONE_KEY <- "d7dddbf4-2cf0-4f39-9b2a-bb099caae36c"
+```
+
+## 3.3 Match genus names to the GBIF Backbone
+
+```{r gbif-backbone}
+bb_old <- read_csv(PATH_BACKBONE_OLD, show_col_types = FALSE) %>%
+  normaliseBackbone(millard_bees$genus) %>%
+  mutate(source = "previous match")
+old_ok <- bb_old %>% filter(rank == "GENUS", family %in% BEE_FAMILIES, !is.na(usageKey))
+
+to_fix <- millard_bees %>% filter(!genus %in% old_ok$verbatim_name)
+fixed <- map2_dfr(to_fix$genus, to_fix$family, function(g, f) {
+  Sys.sleep(0.2)
+  lookupGenus(g, f)
+})
+
+backbone <- bind_rows(old_ok, fixed)
+backbone_ok <- backbone %>% filter(rank == "GENUS", family %in% BEE_FAMILIES, !is.na(usageKey))
+backbone_unresolved <- anti_join(backbone, backbone_ok, by = "verbatim_name")
+genus_keys <- unique(backbone_ok$usageKey)
+
+write_csv(backbone, "backbone_matches.csv")
+write_csv(backbone_unresolved, "backbone_unresolved.csv")
+
+cat("rgbif", as.character(packageVersion("rgbif")), format(Sys.Date()), "\n")
+cat("Genera matched:", length(genus_keys), "of", nrow(millard_bees), "\n")
+cat("Matched in this run:", sum(fixed$source != "unresolved"), "\n")
+
+if (nrow(backbone_unresolved) > 0) {
+  kable(backbone_unresolved %>% select(verbatim_name, matchType, source),
+        caption = "Genera not found in the GBIF Backbone.")
+}
+```
+
+## 3.4 GBIF download
+
+```{r gbif-download}
+if (!file.exists(PATH_BEE_DATA)) {
+  downloadKeys(genus_keys, PATH_BEE_DATA, PATH_GBIF_META)
+}
+
+old_keys <- unique(old_ok$usageKey)
+new_keys <- setdiff(genus_keys, old_keys)
+cat("Keys in main download:", length(old_keys), "\n")
+cat("New keys:", length(new_keys), "\n")
+
+if (!INCLUDE_SPECIMENS && length(new_keys) > 0 && !file.exists(PATH_BEE_SUPP)) {
+  downloadKeys(new_keys, PATH_BEE_SUPP, PATH_GBIF_META_SUPP)
+}
+```
+
+## 3.5 Occurrence records
+
+```{r load-bee-data}
+raw_records <- readRDS(PATH_BEE_DATA)
+if (!"coordinateUncertaintyInMeters" %in% names(raw_records)) {
+  raw_records$coordinateUncertaintyInMeters <- NA_real_
+}
+if (!INCLUDE_SPECIMENS && file.exists(PATH_BEE_SUPP)) {
+  supp <- readRDS(PATH_BEE_SUPP)
+  raw_records <- bind_rows(raw_records, supp %>% filter(!key %in% raw_records$key))
+  cat("Supplementary records:", nrow(supp), "\n")
+}
+
+gbif_meta <- readRDS(PATH_GBIF_META)
+cat("GBIF DOI:", gbif_meta$doi, format(gbif_meta$created), "\n")
+
+cat("Records:", nrow(raw_records), "\n")
+cat("Genera:", n_distinct(raw_records$genus), "\n")
+cat("Species:", n_distinct(raw_records$species), "\n")
+print(table(raw_records$family))
+
+setdiff(unique(raw_records$genus), millard_bees$genus)
+range(raw_records$year, na.rm = TRUE)
+```
+
+### Preserved specimens (comparison only)
+
+```{r specimen-audit, results="hide"}
+yr <- sprintf("%d,%d", YEAR_MIN, as.integer(format(Sys.Date(), "%Y")))
+specimen_audit <- tryCatch(
+  map_dfr(genus_keys, function(k) {
+    tibble(usageKey = k,
+           preserved_specimen = occ_count(taxonKey = k, basisOfRecord = "PRESERVED_SPECIMEN",
+                                          hasCoordinate = TRUE, hasGeospatialIssue = FALSE,
+                                          year = yr, geometry = SDM_WKT),
+           observation = occ_count(taxonKey = k, basisOfRecord = "HUMAN_OBSERVATION",
+                                   hasCoordinate = TRUE, hasGeospatialIssue = FALSE,
+                                   year = yr, geometry = SDM_WKT))
+  }) %>%
+    left_join(backbone_ok %>% select(usageKey, genus = verbatim_name), by = "usageKey") %>%
+    relocate(genus),
+  error = function(e) tibble()
+)
+```
+
+```{r specimen-table}
+if (nrow(specimen_audit) > 0) {
+  write_csv(specimen_audit, "preserved_specimen_audit.csv")
+  cat("Human observations:", sum(specimen_audit$observation), "\n")
+  cat("Preserved specimens:", sum(specimen_audit$preserved_specimen), "\n")
+  kable(specimen_audit %>% arrange(desc(preserved_specimen)) %>% head(15),
+        caption = "Genera with most preserved-specimen records in GBIF.")
+}
+```
+
+## 3.6 Cleaning
+
+```{r gbif-clean-run}
+cleaned <- cleanRecords(raw_records, clim_hist)
+clean_counts <- attr(cleaned, "counts")
+
+cleaning_table <- tibble(
+  stage = c("Downloaded",
+            "Basis of record, coordinates and species name",
+            sprintf("Year >= %d, coordinate uncertainty <= %g km", YEAR_MIN, MAX_COORD_UNC_M / 1000),
+            "CoordinateCleaner (8 tests)",
+            "One record per species per grid cell"),
+  records = c(nrow(raw_records),
+              clean_counts[["after_basis"]],
+              clean_counts[["after_year"]],
+              clean_counts[["after_cc"]],
+              clean_counts[["after_thin"]])
+)
+kable(cleaning_table, caption = "Records after each cleaning step.")
+
+basis_audit <- full_join(raw_records %>% count(basisOfRecord, name = "raw"),
+                         cleaned %>% count(basisOfRecord, name = "after_cleaning"),
+                         by = "basisOfRecord") %>%
+  mutate(across(-basisOfRecord, ~ replace_na(.x, 0L)))
+kable(basis_audit, caption = "Records by basis of record.")
+write_csv(basis_audit, "basis_of_record_audit.csv")
+```
+
+## 3.7 Species list
+
+```{r build-candidates}
+sp_counts <- cleaned %>%
+  filter(!is.na(species), species != "") %>%
+  count(family, genus, species, name = "n_records")
+
+modelled_taxa <- sp_counts %>%
+  filter(n_records >= MIN_RECORDS) %>%
+  arrange(family, genus, species)
+
+cat("Species retained:", nrow(modelled_taxa), "\n")
+kable(modelled_taxa, caption = sprintf("Species with at least %d records.", MIN_RECORDS))
+```
+
+## 3.8 Retention audit
+
+```{r retention-audit}
+retention_audit <- sp_counts %>%
+  mutate(
+    meets_threshold = n_records >= MIN_RECORDS,
+    retained = species %in% modelled_taxa$species,
+    reason_if_skipped = if_else(retained, NA_character_,
+                                sprintf("only %d records", n_records))
+  ) %>%
+  arrange(family, genus, species)
+
+write_csv(retention_audit, "retention_audit.csv")
+cat("Retained:", sum(retention_audit$retained), "\n")
+cat("Skipped:", sum(!retention_audit$retained), "\n")
+```
+
+---
+
+# 4. SDM settings
+
+```{r sdm-settings}
+CALIB_BUFFER_M <- 500000
+MIN_BG_CELLS <- 100L
+N_BG <- 10000L
+K_FOLDS <- 5L
+CV_TYPE <- "spatial"
+SPATIAL_K_TRY <- c(5L, 4L, 3L)
+MIN_TEST_PRES <- 3L
+BLOCK_SIZE_M <- 200000  # same block size for all species
+GAM_K <- 10L
+EXCLUDE_NO_TARGET_GROUP <- TRUE  # skip species without enough target-group background
+EXCLUDE_BOYCE_LE0 <- TRUE  # leave models with Boyce <= 0 out of the stack
+RUN_RANDOM_COMPARISON <- TRUE  # also evaluate with random folds
+DECLINE_SPECIES <- 1
+SDM_BASE_SEED <- 123L
+
+stopifnot(requireNamespace("blockCV", quietly = TRUE))
+cat("Spatial block size (km):", BLOCK_SIZE_M / 1000, "\n")
+```
+
+### Predictor autocorrelation (comparison only)
+
+```{r block-size-diagnostic, error=TRUE}
+# variogram fit as in blockCV::cv_spatial_autocor(), without its plotting step
+autocor_km <- NA_real_
+set.seed(SDM_BASE_SEED)
+autocor_km <- sapply(predictor_vars, function(v) {
+  pts <- sf::st_as_sf(terra::spatSample(setNames(clim_hist[[v]], "target"), size = 5000,
+                                        method = "random", as.points = TRUE, na.rm = TRUE))
+  bb <- sf::st_bbox(pts)
+  corners <- sf::st_sfc(sf::st_point(c(bb$xmin, bb$ymin)), sf::st_point(c(bb$xmax, bb$ymax)),
+                        crs = sf::st_crs(pts))
+  cutoff_km <- as.numeric(sf::st_distance(corners)[1, 2]) / 1000 * 0.35
+  automap::autofitVariogram(target ~ 1, pts, cutoff = cutoff_km)$var_model$range[2]
+})
+round(autocor_km)
+cat("Median range (km):", round(median(autocor_km)), "\n")
+```
+
+---
+
+# 5. SDM ensemble
+
+```{r sdm-run}
+sdm_out <- runSdmSet(
+  taxa_tbl = modelled_taxa,
+  cleaned_records = cleaned,
+  clim_hist = clim_hist,
+  clim_fut_list = clim_futs,
+  base_seed = SDM_BASE_SEED,
+  n_bg = N_BG
+)
+
+sdm_results <- sdm_out$results
+sdm_skipped <- sdm_out$skipped
+
+retention_audit <- retention_audit %>%
+  mutate(modelled = species %in% names(sdm_results),
+         reason_if_skipped = if_else(retained & !modelled,
+                                     sdm_skipped$reason[match(species, sdm_skipped$species)],
+                                     reason_if_skipped))
+write_csv(retention_audit, "retention_audit.csv")
+
+sdm_eval_by_fold <- map_dfr(sdm_results, `[[`, "eval_by_fold")
+write_csv(sdm_eval_by_fold, "sdm_evaluation_by_fold.csv")
+
+sdm_table_random <- NULL
+if (RUN_RANDOM_COMPARISON) {
+  sdm_table_random <- map_dfr(sdm_results, `[[`, "eval_random") %>%
+    group_by(species, algorithm) %>%
+    summarise(auc_mean = mean(auc, na.rm = TRUE),
+              tss_mean = mean(tss, na.rm = TRUE),
+              sensitivity_mean = mean(sensitivity, na.rm = TRUE),
+              specificity_mean = mean(specificity, na.rm = TRUE),
+              .groups = "drop")
+  print(kable(sdm_table_random %>% filter(algorithm == "ensemble"), digits = 3,
+              caption = "Ensemble performance with random folds."))
+  write_csv(sdm_table_random, "sdm_validation_table_random_comparison.csv")
+}
+
+sdm_meta <- tibble(
+  species = vapply(sdm_results, `[[`, "", "label"),
+  n_bg_realised = vapply(sdm_results, function(x) as.integer(x$n_bg_realised), integer(1)),
+  bg_type = vapply(sdm_results, `[[`, "", "bg_type"),
+  cv_used = vapply(sdm_results, `[[`, "", "cv_used"),
+  k_used = vapply(sdm_results, function(x) as.integer(x$k_used), integer(1)),
+  block_km = vapply(sdm_results, function(x) as.numeric(x$block_m) / 1000, numeric(1)),
+  maxnet_ok = vapply(sdm_results, `[[`, logical(1), "maxnet_ok"),
+  mx_folds_failed = vapply(sdm_results, function(x) as.integer(x$mx_folds_failed), integer(1)),
+  boyce = vapply(sdm_results, function(x) as.numeric(x$boyce), numeric(1))
+)
+
+sdm_table <- sdm_eval_by_fold %>%
+  group_by(species, algorithm) %>%
+  summarise(
+    auc_mean = mean(auc, na.rm = TRUE),
+    auc_sd = sd(auc, na.rm = TRUE),
+    sensitivity_mean = mean(sensitivity, na.rm = TRUE),
+    sensitivity_sd = sd(sensitivity, na.rm = TRUE),
+    specificity_mean = mean(specificity, na.rm = TRUE),
+    specificity_sd = sd(specificity, na.rm = TRUE),
+    tss_mean = mean(tss, na.rm = TRUE),
+    tss_sd = sd(tss, na.rm = TRUE),
+    threshold = first(threshold),
+    .groups = "drop"
+  ) %>%
+  left_join(modelled_taxa %>% select(species, n_records), by = "species") %>%
+  left_join(sdm_meta, by = "species") %>%
+  mutate(algorithm = factor(algorithm, levels = c("rf", "gam", "mx", "ensemble"))) %>%
+  arrange(species, algorithm) %>%
+  relocate(species, algorithm, n_records, n_bg_realised, bg_type)
+
+kable(sdm_table, digits = 3, caption = "SDM performance, spatial block cross-validation.")
+write_csv(sdm_table, "sdm_validation_table.csv")
+
+sdm_ensemble <- sdm_table %>% filter(algorithm == "ensemble")
+
+auc_by_algorithm <- sdm_table %>%
+  group_by(algorithm) %>%
+  summarise(auc_min = min(auc_mean, na.rm = TRUE),
+            auc_max = max(auc_mean, na.rm = TRUE),
+            auc_mean = mean(auc_mean, na.rm = TRUE),
+            tss_min = min(tss_mean, na.rm = TRUE),
+            tss_max = max(tss_mean, na.rm = TRUE),
+            tss_mean = mean(tss_mean, na.rm = TRUE),
+            .groups = "drop")
+kable(auc_by_algorithm, digits = 3, caption = "AUC and TSS across species by algorithm.")
+
+cat("Spearman rho, TSS vs n records:",
+    round(cor(sdm_ensemble$tss_mean, sdm_ensemble$n_records,
+              method = "spearman", use = "complete.obs"), 3), "\n")
+
+if (nrow(sdm_skipped) > 0) print(kable(sdm_skipped, caption = "Species not modelled."))
+```
+
+---
+
+# 6. Modelled richness
+
+```{r stack-pool}
+boyce_by_species <- vapply(sdm_results, function(x) as.numeric(x$boyce), numeric(1))
+stack_pool <- if (EXCLUDE_BOYCE_LE0) {
+  sdm_results[is.na(boyce_by_species) | boyce_by_species > 0]
+} else {
+  sdm_results
+}
+excluded_boyce <- setdiff(names(sdm_results), names(stack_pool))
+cat("Species modelled:", length(sdm_results), "\n")
+cat("Species in the stack:", length(stack_pool), "\n")
+cat("Excluded (Boyce <= 0):", excluded_boyce, "\n")
+```
+
+```{r richness}
+sa_outline <- terra::vect(sf::st_union(sf::st_geometry(map_yields)))
+rich_all <- stackRichness(stack_pool)
+rich_hist <- rich_all$hist
+rich_fut <- rich_all$fut
+rich_change <- rich_fut - rich_hist
+n_modelled <- rich_all$n
+
+rich_range <- c(0, n_modelled)
+rich_lim <- max(abs(as.vector(terra::minmax(rich_change))), na.rm = TRUE)
+
+terra::plot(rich_hist, col = palSeq(20), range = rich_range,
+            main = sprintf("Modelled richness, baseline (0-%d species)", n_modelled))
+terra::plot(rich_fut, col = palSeq(20), range = rich_range,
+            main = sprintf("Modelled richness, 2061-2080 (0-%d species)", n_modelled))
+terra::plot(rich_change, col = palDiv(21), range = c(-rich_lim, rich_lim),
+            main = "Change in modelled richness (species)")
+
+cat("Mean richness change in South Africa (species per cell):",
+    round(mean(terra::values(terra::mask(rich_change, sa_outline)), na.rm = TRUE), 3), "\n")
+```
+
+```{r species-area}
+species_area_change <- map_dfr(sdm_results, speciesAreaChange, mask_v = sa_outline)
+kable(species_area_change, digits = 1, caption = "Suitable area per species in South Africa (km2).")
+write_csv(species_area_change, "species_area_change.csv")
+
+species_area_change_calib <- map_dfr(sdm_results, function(res) {
+  speciesAreaChange(res, mask_v = terra::unwrap(res$calib))
+})
+write_csv(species_area_change_calib, "species_area_change_calibration_area.csv")
+species_area_change_extent <- map_dfr(sdm_results, speciesAreaChange, mask_v = NULL)
+write_csv(species_area_change_extent, "species_area_change_full_extent.csv")
+kable(species_area_change_calib %>%
+        select(species, pct_change_calibration_area = pct_change) %>%
+        left_join(species_area_change_extent %>%
+                    select(species, pct_change_full_extent = pct_change), by = "species"),
+      digits = 1, caption = "Change in suitable area (%), calibration area and full extent.")
+
+range_size_rho <- suppressWarnings(cor.test(species_area_change$area_hist_km2,
+                                            species_area_change$pct_change,
+                                            method = "spearman"))
+cat("Spearman rho, baseline area vs % change:", round(range_size_rho$estimate, 2),
+    "p =", round(range_size_rho$p.value, 3), "\n")
+
+species_area_change_by_gcm <- map_dfr(sdm_results, function(res) {
+  a_h <- areaWithin(thresholdEach(res, "hist"), sa_outline)
+  map_dfr(names(GCM_CODES), function(g) {
+    a_f <- areaWithin(res$fut_bin_gcm[[g]], sa_outline)
+    tibble(species = res$label, gcm = g,
+           area_hist_km2 = a_h, area_fut_km2 = a_f,
+           change_km2 = a_f - a_h, pct_change = 100 * (a_f - a_h) / a_h)
+  })
+})
+gcm_sign <- species_area_change_by_gcm %>%
+  group_by(species) %>%
+  summarise(models_declining = sum(pct_change < 0), models_gaining = sum(pct_change > 0),
+            .groups = "drop")
+kable(species_area_change_by_gcm %>%
+        select(species, gcm, pct_change) %>%
+        pivot_wider(names_from = gcm, values_from = pct_change) %>%
+        left_join(gcm_sign, by = "species"),
+      digits = 1, caption = "Change in suitable area in South Africa (%) by GCM.")
+write_csv(species_area_change_by_gcm, "species_area_change_by_gcm.csv")
+```
+
+```{r novelty}
+novelty_by_species <- map_dfr(sdm_results, function(res) {
+  csz <- terra::cellSize(res$ens_hist, unit = "km")
+  i_gcm <- seq_len(terra::nlyr(res$novelty))
+  nov_any <- terra::app(res$novelty, max, na.rm = TRUE)
+  nov_sa <- terra::mask(nov_any, sa_outline)
+  fut_any <- terra::app(res$fut_bin_gcm, max, na.rm = TRUE)
+  fut_novel <- terra::app(res$fut_bin_gcm * res$novelty, max, na.rm = TRUE)
+  nt2_any <- terra::app(res$nt2_gcm > 1, max, na.rm = TRUE)
+  fut_novel_nt2 <- terra::app(res$fut_bin_gcm * ((res$novelty == 1) | (res$nt2_gcm > 1)),
+                              max, na.rm = TRUE)
+  loss_g <- (res$hist_bin == 1) * (res$fut_bin_gcm == 0)
+  gain_g <- (res$hist_bin == 0) * (res$fut_bin_gcm == 1)
+
+  pct_loss_novel <- mean(vapply(i_gcm, function(i)
+    sharePct(areaKm2(loss_g[[i]] * res$novelty[[i]], csz), areaKm2(loss_g[[i]], csz)),
+    numeric(1)))
+  pct_gain_novel <- mean(vapply(i_gcm, function(i)
+    sharePct(areaKm2(gain_g[[i]] * res$novelty[[i]], csz), areaKm2(gain_g[[i]], csz)),
+    numeric(1)))
+  pct_current_exposed <- mean(vapply(i_gcm, function(i)
+    sharePct(areaKm2(res$hist_bin * res$novelty[[i]], csz), areaKm2(res$hist_bin, csz)),
+    numeric(1)))
+
+  sa_valid <- validAreaKm2(nov_sa, csz)
+  tibble(species = res$label,
+         pct_extent_novel = 100 * areaKm2(nov_any, csz) / validAreaKm2(res$ens_hist, csz),
+         pct_study_area_novel = 100 * areaKm2(nov_sa, csz) / sa_valid,
+         pct_future_suitable_novel = sharePct(areaKm2(fut_novel, csz), areaKm2(fut_any, csz)),
+         pct_study_area_nt2 = 100 * areaKm2(terra::mask(nt2_any, sa_outline), csz) / sa_valid,
+         pct_future_suitable_novel_nt1_or_nt2 = sharePct(areaKm2(fut_novel_nt2, csz),
+                                                         areaKm2(fut_any, csz)),
+         pct_current_suitable_exposed = pct_current_exposed,
+         pct_loss_area_novel = pct_loss_novel,
+         pct_gain_area_novel = pct_gain_novel)
+})
+kable(novelty_by_species, digits = 1, caption = "Climate novelty per species (% of area).")
+write_csv(novelty_by_species, "novelty_by_species.csv")
+
+novelty_by_predictor <- map_dfr(sdm_results, function(res) {
+  csz <- terra::cellSize(res$ens_hist, unit = "km")
+  sa_area <- validAreaKm2(terra::mask(res$ens_hist, sa_outline), csz)
+  map_dfr(predictor_vars, function(v) {
+    nv <- terra::mask(res$novelty_by_predictor[[v]], sa_outline)
+    tibble(species = res$label, predictor = v,
+           pct_study_area_novel = 100 * areaKm2(nv, csz) / sa_area)
+  })
+})
+kable(novelty_by_predictor %>% pivot_wider(names_from = predictor, values_from = pct_study_area_novel),
+      digits = 1, caption = "South Africa outside the calibration range, by predictor (%).")
+write_csv(novelty_by_predictor, "novelty_by_predictor.csv")
+
+species_area_change_clamped <- map_dfr(sdm_results, function(res) {
+  rcl <- matrix(c(-Inf, res$threshold, 0, res$threshold, Inf, 1), ncol = 3, byrow = TRUE)
+  csz <- terra::cellSize(res$ens_hist, unit = "km")
+  a_h <- areaKm2(terra::classify(res$ens_hist, rcl), csz)
+  a_f <- areaKm2(terra::classify(res$ens_fut, rcl), csz)
+  a_c <- areaKm2(terra::classify(res$ens_fut_clamped, rcl), csz)
+  tibble(species = res$label, area_hist_km2 = a_h, area_fut_km2 = a_f, area_fut_clamped_km2 = a_c,
+         pct_change = 100 * (a_f - a_h) / a_h, pct_change_clamped = 100 * (a_c - a_h) / a_h)
+})
+kable(species_area_change_clamped, digits = 1,
+      caption = "Change in suitable area with and without clamping (full extent).")
+write_csv(species_area_change_clamped, "species_area_change_clamped.csv")
+
+rf_importance <- map_dfr(sdm_results, function(res) {
+  tibble(species = res$label, predictor = names(res$rf_importance),
+         importance = as.numeric(res$rf_importance))
+})
+kable(rf_importance %>% pivot_wider(names_from = predictor, values_from = importance),
+      digits = 1, caption = "Random forest variable importance (mean decrease in Gini).")
+write_csv(rf_importance, "rf_variable_importance.csv")
+
+response_curves <- map_dfr(names(sdm_results), function(sp) {
+  res <- sdm_results[[sp]]
+  responseCurves(res$models, res$dat, res$weights) %>% mutate(species = sp, .before = 1)
+})
+write_csv(response_curves, "response_curves.csv")
+
+for (sp in c("Amegilla atrocincta", "Xylocopa caffra", "Xylocopa capitata")) {
+  rc <- response_curves %>% filter(species == sp)
+  par(mfrow = c(2, 2))
+  for (v in predictor_vars) {
+    d <- rc %>% filter(predictor == v)
+    plot(d$value, d$ensemble, type = "l", lwd = 2, ylim = c(0, 1),
+         xlab = v, ylab = "Relative suitability", main = sp)
+    lines(d$value, d$rf, col = "steelblue")
+    lines(d$value, d$gam, col = "darkorange")
+    lines(d$value, d$mx, col = "forestgreen")
+  }
+  par(mfrow = c(1, 1))
+}
+
+bio5_summary <- response_curves %>%
+  filter(predictor == "bio5") %>%
+  group_by(species) %>%
+  summarise(rho_bio5 = cor(value, ensemble, method = "spearman"), .groups = "drop") %>%
+  left_join(rf_importance %>%
+              group_by(species) %>%
+              mutate(rf_rank = rank(-importance)) %>%
+              filter(predictor == "bio5") %>%
+              select(species, bio5_rf_rank = rf_rank),
+            by = "species")
+kable(bio5_summary, digits = 2,
+      caption = "Ensemble response to bio5 (Spearman rho) and bio5 RF importance rank.")
+write_csv(bio5_summary, "bio5_summary.csv")
+
+nov_any_by_sp <- terra::rast(lapply(sdm_results, function(r) terra::app(r$novelty, max, na.rm = TRUE)))
+mean_novelty <- terra::mask(terra::app(nov_any_by_sp, mean, na.rm = TRUE), clim_hist[[1]])
+terra::plot(mean_novelty, col = palSeq(20), range = c(0, 1),
+            main = "Share of species with novel future climate")
+```
+
+---
+
+# 7. Catchment-level richness
+
+```{r catch-aggregate}
+catch_v <- terra::vect(map_yields)
+
+cell_cover <- terra::extract(clim_hist[[1]], catch_v, exact = TRUE) %>%
+  group_by(ID) %>%
+  summarise(cells_touched = n(), cell_equivalents = sum(fraction), .groups = "drop") %>%
+  mutate(sub_cat = map_yields$sub_cat[ID], .before = 1)
+write_csv(cell_cover, "cells_per_subcatchment.csv")
+summary(cell_cover[, c("cells_touched", "cell_equivalents")])
+cat("Sub-catchments smaller than one grid cell (%):",
+    round(100 * mean(cell_cover$cell_equivalents < 1), 1), "\n")
+
+bee_all <- catchmentRichness(rich_all, k_eq = DECLINE_SPECIES)
+
+map_yields$rich_hist <- bee_all$rich_hist
+map_yields$rich_fut <- bee_all$rich_fut
+map_yields$rich_change <- bee_all$rich_change
+map_yields$pct_retained <- bee_all$pct_retained
+map_yields$bee_decline <- bee_all$bee_decline
+
+rich_by_gcm <- stackRichnessByGcm(stack_pool, names(GCM_CODES))
+bee_by_gcm <- lapply(rich_by_gcm, catchmentRichness, k_eq = DECLINE_SPECIES)
+
+# sensitivity analyses
+rich_noexp <- stackRichnessField(stack_pool, "fut_bin_noexp_primary")
+bee_noexp <- catchmentRichness(rich_noexp, k_eq = DECLINE_SPECIES)
+bee_any <- catchmentRichness(rich_all, k_eq = 0)
+bee_allsp <- catchmentRichness(stackRichness(sdm_results), k_eq = DECLINE_SPECIES)
+bee_half <- catchmentRichness(rich_all, k_eq = 0.5)
+bee_two <- catchmentRichness(rich_all, k_eq = 2)
+
+cat("Catchments without richness value:", sum(is.na(bee_all$rich_hist)), "\n")
+```
+
+---
+
+# 8. Yield change and richness change classes
+
+```{r catch-risk}
+YIELD_DECLINE_PCT <- 0
+
+map_yields <- map_yields %>%
+  mutate(
+    yield_drop = (pct_change_late < -YIELD_DECLINE_PCT) & !is.na(pct_change_late),
+    yield_gain = (pct_change_late > YIELD_DECLINE_PCT) & !is.na(pct_change_late),
+    risk_class = classifyRisk(pct_change_late, bee_decline)
+  )
+
+plotCategorical(map_yields, map_yields$risk_class, RISK_COLS,
+                "Yield change and change in modelled richness")
+plot(map_yields["rich_change"],
+     main = "Change in mean modelled richness per catchment (species)",
+     pal = palDiv, breaks = symBreaks(map_yields$rich_change, n = 10),
+     border = NA)
+
+map_aea <- st_transform(map_yields, AFRICA_AEA)
+map_aea$area_km2 <- area_m2 / 1e6
+
+cat("Median richness retained (%):", round(median(map_yields$pct_retained, na.rm = TRUE), 1), "\n")
+area_declining <- sum(map_aea$area_km2[which(bee_all$bee_decline)], na.rm = TRUE)
+cat("Area with richness decline (km2):", round(area_declining), "\n")
+cat("Share of mapped area (%):", round(100 * area_declining / total_area_km2, 1), "\n")
+
+risk_area <- map_aea %>%
+  st_drop_geometry() %>%
+  group_by(risk_class) %>%
+  summarise(area_km2 = sum(area_km2, na.rm = TRUE), .groups = "drop") %>%
+  mutate(pct_of_total = 100 * area_km2 / total_area_km2,
+         pct_of_interpretable = ifelse(risk_class %in% c(FLOOR_LABEL, "Not assessed"), NA,
+                                       100 * area_km2 / interpretable_area)) %>%
+  arrange(desc(area_km2))
+
+kable(risk_area, digits = 1, caption = "Area per class (km2).")
+write_csv(risk_area, "risk_class_areas.csv")
+
+yield_thresh_sensitivity <- map_dfr(c(0, 1, 2, 5), function(t) {
+  yd <- (map_yields$pct_change_late < -t) & !is.na(map_yields$pct_change_late)
+  tibble(min_change_pct = t,
+         yield_declining_km2 = sum(map_aea$area_km2[which(yd)], na.rm = TRUE),
+         both_declining_km2 = sum(map_aea$area_km2[which(yd & map_yields$bee_decline)],
+                                  na.rm = TRUE))
+})
+kable(yield_thresh_sensitivity, digits = 0,
+      caption = "Yield-decline area for different minimum change thresholds.")
+```
+
+```{r stacking-sensitivity}
+rule_list <- list(
+  "Primary (decline >= 1 species)" = bee_all,
+  "No expansion beyond baseline suitable area" = bee_noexp,
+  "Any decline" = bee_any,
+  "All modelled species" = bee_allsp,
+  "Decline >= 0.5 species" = bee_half,
+  "Decline >= 2 species" = bee_two
+)
+
+stack_rule_compare <- map_dfr(names(rule_list), function(nm) {
+  p <- rule_list[[nm]]
+  tibble(rule = nm,
+         catchments_declining = sum(p$bee_decline, na.rm = TRUE),
+         area_declining_km2 = sum(map_aea$area_km2[which(p$bee_decline)], na.rm = TRUE),
+         median_richness_change = median(p$rich_change, na.rm = TRUE))
+}) %>%
+  mutate(pct_area_declining = 100 * area_declining_km2 / total_area_km2)
+
+declining_by_gcm <- map_dfr(names(bee_by_gcm), function(g) {
+  p <- bee_by_gcm[[g]]
+  tibble(gcm = g,
+         catchments_declining = sum(p$bee_decline, na.rm = TRUE),
+         area_declining_km2 = sum(map_aea$area_km2[which(p$bee_decline)], na.rm = TRUE))
+}) %>%
+  mutate(pct_area_declining = 100 * area_declining_km2 / total_area_km2)
+
+consensus_all_gcm <- Reduce(`&`, lapply(bee_by_gcm, function(p) replace_na(p$bee_decline, FALSE)))
+cat("Declining area flagged by all GCMs (%):",
+    round(100 * sum(map_aea$area_km2[which(consensus_all_gcm & bee_all$bee_decline)], na.rm = TRUE) /
+            area_declining, 1), "\n")
+
+kable(stack_rule_compare, digits = 2, caption = "Richness decline under alternative rules.")
+kable(declining_by_gcm, digits = 1, caption = "Richness decline by GCM.")
+write_csv(stack_rule_compare, "stacking_rule_comparison.csv")
+write_csv(declining_by_gcm, "declining_area_by_gcm.csv")
+
+floor_sensitivity <- map_dfr(c(0.05, 0.1, 0.2), function(fl) {
+  pc <- ifelse(map_yields$Baseline_yld_mean >= fl,
+               100 * (map_yields$LateCentury_yld_mean - map_yields$Baseline_yld_mean) /
+                 map_yields$Baseline_yld_mean,
+               NA_real_)
+  gain <- !is.na(pc) & pc > 0
+  overlapShare(bee_all, gain) %>%
+    mutate(floor_t_ha = fl, interpretable_km2 = sum(map_aea$area_km2[!is.na(pc)], na.rm = TRUE),
+           .before = 1)
+})
+kable(floor_sensitivity, digits = 1, caption = "Sensitivity to the baseline yield floor.")
+write_csv(floor_sensitivity, "floor_sensitivity.csv")
+```
+
+# 9. Yield gains and richness decline
+
+```{r gains-at-risk}
+map_yields <- map_yields %>%
+  mutate(gain_status = classifyGain(pct_change_late, yield_gain, bee_decline))
+
+plotCategorical(map_yields, map_yields$gain_status, GAIN_COLS,
+                "Yield gain and richness decline")
+
+map_aea$gain_status <- map_yields$gain_status
+
+gain_area <- map_aea %>%
+  st_drop_geometry() %>%
+  group_by(gain_status) %>%
+  summarise(area_km2 = sum(area_km2, na.rm = TRUE), .groups = "drop") %>%
+  arrange(desc(area_km2))
+kable(gain_area, digits = 0, caption = "Area by gain status (km2).")
+
+area_with_decline <- areaOf(gain_area, "Gain with richness decline")
+area_without_decline <- areaOf(gain_area, "Gain without richness decline")
+gains_at_risk <- tibble(
+  area_projected_gain_km2 = area_with_decline + area_without_decline,
+  area_gain_with_decline_km2 = area_with_decline,
+  overlap_share_pct = 100 * area_with_decline / (area_with_decline + area_without_decline)
+)
+kable(gains_at_risk, digits = 1, caption = "Overlap share of the yield-gain area.")
+write_csv(gain_area, "gain_status_areas.csv")
+write_csv(gains_at_risk, "gains_at_risk.csv")
+
+both_decline_km2 <- sum(map_aea$area_km2[which(map_yields$risk_class == "Both decline")], na.rm = TRUE)
+yield_decline_km2 <- sum(map_aea$area_km2[which(map_yields$yield_drop)], na.rm = TRUE)
+cat("Yield-declining area (km2):", round(yield_decline_km2), "\n")
+cat("Of which with richness decline (%):",
+    round(100 * both_decline_km2 / yield_decline_km2, 1), "\n")
+
+# yield and bee projections from the same GCM
+gain_by_gcm <- lapply(setNames(names(GCM_CODES), names(GCM_CODES)), function(g) {
+  yg <- yield_by_gcm %>% filter(gcm_name == g)
+  yg$yield_gain_gcm[match(map_yields$sub_cat, yg$sub_cat)]
+})
+
+gains_at_risk_paired <- map_dfr(names(GCM_CODES), function(g) {
+  overlapShare(bee_by_gcm[[g]], gain_by_gcm[[g]]) %>% mutate(gcm = g, .before = 1)
+})
+kable(gains_at_risk_paired, digits = 1, caption = "Overlap share, paired GCMs.")
+write_csv(gains_at_risk_paired, "gains_at_risk_paired_gcm.csv")
+
+paired_agree <- Reduce(`+`, lapply(names(GCM_CODES), function(g) {
+  as.integer(replace_na(gain_by_gcm[[g]] & bee_by_gcm[[g]]$bee_decline, FALSE))
+}))
+summary(gains_at_risk_paired$overlap_share_pct)
+cat("Area flagged by all paired GCMs (km2):",
+    round(sum(map_aea$area_km2[which(paired_agree == length(GCM_CODES))], na.rm = TRUE)), "\n")
+
+map_yields$paired_agree <- paired_agree
+agree_v <- terra::vect(map_yields %>% select(paired_agree))
+terra::plot(agree_v, "paired_agree",
+            col = c("grey90", "#fee5d9", "#fcae91", "#fb6a4a", "#de2d26", "#a50f15", "#67000d"),
+            type = "classes", border = NA,
+            main = "Number of GCMs with yield gain and richness decline")
+write_csv(map_yields %>% st_drop_geometry() %>% select(sub_cat, paired_agree),
+          "paired_gcm_agreement_by_subcatchment.csv")
+
+core_full <- paired_agree == length(GCM_CODES)
+core_loo <- map_dfr(names(stack_pool), function(sp) {
+  bee_g <- lapply(stackRichnessByGcm(stack_pool[names(stack_pool) != sp], names(GCM_CODES)),
+                  catchmentRichness, k_eq = DECLINE_SPECIES)
+  agree <- Reduce(`+`, lapply(names(GCM_CODES), function(g) {
+    as.integer(replace_na(gain_by_gcm[[g]] & bee_g[[g]]$bee_decline, FALSE))
+  }))
+  core <- agree == length(GCM_CODES)
+  tibble(species_left_out = sp,
+         core_catchments = sum(core),
+         core_km2 = sum(map_aea$area_km2[core]),
+         kept_from_full_core = sum(core & core_full))
+})
+kable(core_loo, digits = 0, caption = "All-GCM core, leaving one species out.")
+write_csv(core_loo, "core_leave_one_species_out.csv")
+
+gains_at_risk_by_rule <- map_dfr(names(rule_list), function(nm) {
+  overlapShare(rule_list[[nm]], map_yields$yield_gain) %>% mutate(rule = nm, .before = 1)
+})
+kable(gains_at_risk_by_rule, digits = 1, caption = "Overlap share under alternative rules.")
+write_csv(gains_at_risk_by_rule, "gains_at_risk_by_rule.csv")
+
+# leave one species out
+loo_influence <- map_dfr(names(stack_pool), function(sp) {
+  pl <- catchmentRichness(stackRichness(stack_pool[names(stack_pool) != sp]),
+                          k_eq = DECLINE_SPECIES)
+  area_decl <- sum(map_aea$area_km2[which(pl$bee_decline)], na.rm = TRUE)
+  tibble(species_left_out = sp,
+         area_declining_km2 = area_decl,
+         pct_area_declining = 100 * area_decl / total_area_km2,
+         overlap_share_pct = overlapShare(pl, map_yields$yield_gain)$overlap_share_pct)
+})
+kable(loo_influence, digits = 1, caption = "Leave-one-species-out results.")
+write_csv(loo_influence, "leave_one_species_out.csv")
+```
+
+## 9.1 Numbers used in the text
+
+```{r text-numbers}
+loo_range <- range(loo_influence$overlap_share_pct)
+no_watmoughi <- loo_influence$overlap_share_pct[loo_influence$species_left_out == "Xylocopa watmoughi"]
+
+cat("Overlap share (%):", round(gains_at_risk$overlap_share_pct, 1), "\n")
+cat("Leaving one species out (%):", round(loo_range[1], 1), "to", round(loo_range[2], 1), "\n")
+cat("Without X. watmoughi (%):", round(no_watmoughi, 1), "\n")
+cat("Catchments flagged by all paired GCMs:", sum(paired_agree == length(GCM_CODES)), "\n")
+cat("Core, leaving one species out:", min(core_loo$core_catchments), "to",
+    max(core_loo$core_catchments), "\n")
+
+kable(gains_at_risk_by_rule %>%
+        transmute(rule, pct_of_interpretable = 100 * area_gain_with_decline_km2 / interpretable_area),
+      digits = 2, caption = "Gain with richness decline, share of interpretable area (%).")
+```
+
+---
+
+# 10. Export and session info
+
+```{r export-results}
+frozen <- list(
+  yield_summary = yield_summary,
+  yield_summary_weighted = yield_summary_weighted,
+  join_diag = join_diag,
+  cleaning_table = cleaning_table,
+  basis_audit = basis_audit,
+  specimen_audit = specimen_audit,
+  backbone_matches = backbone,
+  backbone_unresolved = backbone_unresolved,
+  n_genus_keys = length(genus_keys),
+  new_genus_keys = new_keys,
+  gbif_meta = gbif_meta,
+  modelled_taxa = modelled_taxa,
+  retention_audit = retention_audit,
+  sdm_table = sdm_table,
+  sdm_eval_by_fold = sdm_eval_by_fold,
+  sdm_table_random = sdm_table_random,
+  sdm_skipped = sdm_skipped,
+  species_area_change = species_area_change,
+  species_area_change_calib = species_area_change_calib,
+  species_area_change_extent = species_area_change_extent,
+  species_area_change_by_gcm = species_area_change_by_gcm,
+  species_area_change_clamped = species_area_change_clamped,
+  novelty_by_species = novelty_by_species,
+  novelty_by_predictor = novelty_by_predictor,
+  rf_importance = rf_importance,
+  range_size_rho = c(rho = unname(range_size_rho$estimate), p = range_size_rho$p.value),
+  risk_area = risk_area,
+  gain_area = gain_area,
+  gains_at_risk = gains_at_risk,
+  gains_at_risk_paired = gains_at_risk_paired,
+  gains_at_risk_by_rule = gains_at_risk_by_rule,
+  stack_rule_compare = stack_rule_compare,
+  declining_by_gcm = declining_by_gcm,
+  loo_influence = loo_influence,
+  core_loo = core_loo,
+  cell_cover = cell_cover,
+  stack_pool_species = names(stack_pool),
+  excluded_boyce = excluded_boyce,
+  block_size_m = BLOCK_SIZE_M,
+  autocor_km = autocor_km,
+  bio5_summary = bio5_summary,
+  exclude_boyce_le0 = EXCLUDE_BOYCE_LE0,
+  yield_thresh_sensitivity = yield_thresh_sensitivity,
+  floor_sensitivity = floor_sensitivity,
+  interpretable_area = interpretable_area,
+  total_area_km2 = total_area_km2,
+  gcms_used = names(GCM_CODES),
+  candidate_vars = candidate_vars,
+  predictor_vars = predictor_vars,
+  vif_vals = vif_vals,
+  res_deg = res_deg,
+  year_min = YEAR_MIN,
+  min_records = MIN_RECORDS,
+  min_bg_cells = MIN_BG_CELLS,
+  exclude_no_target_group = EXCLUDE_NO_TARGET_GROUP,
+  include_specimens = INCLUDE_SPECIMENS,
+  k_folds = K_FOLDS,
+  cv_type = CV_TYPE,
+  spatial_k_try = SPATIAL_K_TRY,
+  gam_k = GAM_K,
+  calib_buffer_m = CALIB_BUFFER_M,
+  decline_species = DECLINE_SPECIES,
+  yield_decline_pct = YIELD_DECLINE_PCT,
+  sdm_base_seed = SDM_BASE_SEED,
+  bg_seeds = setNames(SDM_BASE_SEED + seq_len(nrow(modelled_taxa)), modelled_taxa$species),
+  fit_seeds = setNames(SDM_BASE_SEED + 1000L + seq_len(nrow(modelled_taxa)), modelled_taxa$species),
+  n_bg = N_BG,
+  n_modelled = length(sdm_results),
+  n_skipped = nrow(sdm_skipped),
+  r_version = R.version.string,
+  pkg_versions = vapply(setdiff(loadedNamespaces(), "base"),
+                        function(p) as.character(packageVersion(p)), character(1)),
+  date_frozen = Sys.time()
+)
+saveRDS(frozen, sprintf("frozen_results_cmip5_v5_2_%s.rds", format(Sys.Date(), "%Y_%m_%d")))
+writeLines(c(frozen$r_version, sprintf("%s %s", names(frozen$pkg_versions), frozen$pkg_versions)),
+           "package_versions.txt")
+```
+
+```{r session-info}
+sessionInfo()
+```
