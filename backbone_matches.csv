@@ -1,0 +1,124 @@
+verbatim_name,usageKey,scientificName,rank,status,matchType,confidence,kingdom,phylum,class,order,family,source
+Bombus,1340278,"Bombus Latreille, 1802",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Amegilla,1339775,"Amegilla Friese, 1897",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Andrena,1345710,"Andrena Fabricius, 1775",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Andrenidae,previous match
+Eucera,1340870,"Eucera Scopoli, 1770",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Halictus,1347978,"Halictus Latreille, 1804",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Lasioglossum,1353501,"Lasioglossum Curtis, 1833",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Rhodanthidium,1334618,"Rhodanthidium Isensee, 1927",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,previous match
+Anthidium,1334798,"Anthidium Fabricius, 1804",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,previous match
+Chelostoma,1334476,"Chelostoma Latreille, 1809",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,previous match
+Coelioxys,1338333,"Coelioxys Latreille, 1809",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,previous match
+Colletes,1348504,"Colletes Latreille, 1802",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Colletidae,previous match
+Dasypoda,1345853,"Dasypoda Latreille, 1802",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Melittidae,previous match
+Aglaoapis,1335007,"Aglaoapis Cameron, 1901",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,previous match
+Heriades,1336750,"Heriades Spinola, 1808",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,previous match
+Hylaeus,1349360,"Hylaeus Fabricius, 1793",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Colletidae,previous match
+Megachile,1335011,"Megachile Latreille, 1802",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,previous match
+Melecta,1345295,"Melecta Latreille, 1802",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Melitturga,1358399,"Melitturga Latreille, 1809",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Andrenidae,previous match
+Nomada,1343230,"Nomada Scopoli, 1770",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Pseudapis,1353092,"Pseudapis W.F.Kirby, 1900",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Hoplitis,1336906,"Hoplitis Klug, 1807",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,previous match
+Panurgus,1352891,"Panurgus Panzer, 1806",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Andrenidae,previous match
+Pasites,5039571,"Pasites Jurine, 1807",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Rophites,1352005,"Rophites Spinola, 1808",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Sphecodes,1351262,"Sphecodes Latreille, 1804",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Xylocopa,1342048,"Xylocopa Latreille, 1802",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Peponapis,1339639,"Peponapis Robertson, 1902",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Melissodes,5040596,"Melissodes Latreille, 1829",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Patellapis,1350899,"Patellapis Friese, 1909",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Lipotriches,1352165,"Lipotriches Gerstäcker, 1858",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Braunsapis,1342546,"Braunsapis Michener, 1969",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Macropis,1345894,"Macropis Panzer, 1809",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Melittidae,previous match
+Trachusa,5038555,"Trachusa Panzer, 1804",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,previous match
+Tetralonia,1345141,"Tetralonia Spinola, 1838",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Augochlora,1352768,"Augochlora Smith, 1853",GENUS,ACCEPTED,EXACT,92,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Plebeia,1345534,"Plebeia Schwarz, 1938",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Scaptotrigona,1345654,"Scaptotrigona Moure, 1942",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Leioproctus,7998979,"Leioproctus Smith, 1853",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Colletidae,previous match
+Chalepogenus,1339736,"Chalepogenus Holmberg, 1903",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Isepeolus,1340723,"Isepeolus Cockerell, 1907",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Cadeguala,1350331,"Cadeguala Reed, 1892",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Colletidae,previous match
+Chilicola,1350112,"Chilicola Spinola, 1851",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Colletidae,previous match
+Liphanthus,1358426,"Liphanthus Reed, 1894",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Andrenidae,previous match
+Ruizantheda,1352000,"Ruizantheda Moure, 1964",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Caenohalictus,1352594,"Caenohalictus Cameron, 1903",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Agapostemon,5042846,"Agapostemon Guérin-Méneville, 1844",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Anthidiellum,1338847,"Anthidiellum Cockerell, 1904",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,previous match
+Augochlorella,1352571,"Augochlorella Sandhouse, 1937",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Protandrena,1355428,"Protandrena Cockerell, 1896",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Andrenidae,previous match
+Augochloropsis,1352945,"Augochloropsis Cockerell, 1897",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Pseudopanurgus,1355656,"Pseudopanurgus Cockerell, 1897",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Andrenidae,previous match
+Svastra,1345609,"Svastra Holmberg, 1884",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Tetragonisca,1339479,"Tetragonisca Moure, 1946",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Oxytrigona,1339249,"Oxytrigona Cockerell, 1917",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Camptopoeum,1355488,"Camptopoeum Spinola, 1843",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Andrenidae,previous match
+Tetraloniella,1343025,"Tetraloniella Ashmead, 1900",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Lithurgus,1336587,"Lithurgus Berthold, 1827",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,previous match
+Amphylaeus,1350351,"Amphylaeus Michener, 1965",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Colletidae,previous match
+Callohesma,1349181,"Callohesma Michener, 1965",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Colletidae,previous match
+Ceylalictus,1352660,"Ceylalictus Strand, 1913",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Euhesma,1349016,"Euhesma Michener, 1965",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Colletidae,previous match
+Euryglossina,7235979,"Euryglossina Cockerell, 1910",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Colletidae,previous match
+Exoneurella,1341581,"Exoneurella Michener, 1963",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Hyphesma,1350734,"Hyphesma Michener, 1965",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Colletidae,previous match
+Meroglossa,1350497,"Meroglossa Smith, 1853",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Colletidae,previous match
+Pachyprosopis,1349262,"Pachyprosopis Perkins, 1908",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Colletidae,previous match
+Tetragonula,1344522,"Tetragonula Moure, 1961",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Allodapula,1339232,"Allodapula Cockerell, 1934",GENUS,ACCEPTED,EXACT,92,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Afranthidium,1338254,"Afranthidium Michener, 1948",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,previous match
+Liotrigona,1340262,"Liotrigona Moure, 1961",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Nomia,11009767,"Nomia Latreille, 1804",GENUS,ACCEPTED,HIGHERRANK,92,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Thrinchostoma,1352702,"Thrinchostoma Saussure, 1890",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Centris,1342796,"Centris Fabricius, 1804",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Euglossa,1340556,"Euglossa Latreille, 1802",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Neofidelia,1336722,"Neofidelia Moure & Michener, 1955",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,previous match
+Eufriesea,1339261,"Eufriesea Cockerell, 1908",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Eulaema,1339327,"Eulaema Lepeletier, 1841",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Exaerete,1339674,"Exaerete Hoffmannsegg, 1817",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Exomalopsis,1339543,"Exomalopsis Spinola, 1853",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Cephalotrigona,1340159,"Cephalotrigona Schwarz, 1940",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Frieseomelitta,1344795,"Frieseomelitta Ihering, 1912",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Lestrimelitta,1342662,"Lestrimelitta Friese, 1903",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Melipona,1340042,"Melipona Illiger, 1806",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Nannotrigona,1344750,"Nannotrigona Cockerell, 1922",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Partamona,1339701,"Partamona Schwarz, 1939",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Trigonisca,1341981,"Trigonisca Moure, 1950",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Osiris,1345460,"Osiris Smith, 1854",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Paratetrapedia,1344665,"Paratetrapedia Moure, 1941",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Triepeolus,1341601,"Triepeolus Robertson, 1901",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Ptiloglossa,1349302,"Ptiloglossa Smith, 1853",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Colletidae,previous match
+Megalopta,1352138,"Megalopta Smith, 1853",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Pereirapis,1352649,"Pereirapis Moure, 1943",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Paratrigona,1345577,"Paratrigona Schwarz, 1938",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Agapostemonoides,1351600,"Agapostemonoides Roberts & Brooks, 1987",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Ancyloscelis,1340809,"Ancyloscelis Latreille, 1829",GENUS,ACCEPTED,EXACT,92,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Anthodioctes,1338136,"Anthodioctes Holmberg, 1903",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,previous match
+Caenaugochlora,1352892,"Caenaugochlora Michener, 1954",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Chlerogella,1352121,"Chlerogella Michener, 1954",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Habralictus,1355377,"Habralictus Moure, 1941",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Hypanthidium,1338217,"Hypanthidium Cockerell, 1904",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,previous match
+Mesoplia,1340121,"Mesoplia Lepeletier, 1841",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Microsphecodes,1352754,"Microsphecodes Eickwort & Stage, 1972",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Neocorynura,1351743,"Neocorynura Schrottky, 1879",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Protosiris,1339438,"Protosiris Roig-Alsina, 1989",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Pseudaugochlora,1352498,"Pseudaugochlora Michener, 1954",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Rhinetula,1350877,"Rhinetula Friese, 1922",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Temnosoma,1351085,"Temnosoma Smith, 1853",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,previous match
+Thygater,1344761,"Thygater Holmberg, 1884",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Mesocheira,1340859,"Mesocheira Lepeletier & Audinet-Serville, 1825",GENUS,ACCEPTED,EXACT,94,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,previous match
+Anthophora,1337506,"Anthophora Latreille, 1803",GENUS,ACCEPTED,HIGHERRANK,100,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,match with family
+Ceratina,1341198,"Ceratina Latreille, 1802",GENUS,ACCEPTED,HIGHERRANK,100,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,match with family
+Dufourea,1351817,"Dufourea Lepeletier, 1841",GENUS,ACCEPTED,HIGHERRANK,100,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,match with family
+Melitta,1345736,"Melitta Kirby, 1802",GENUS,ACCEPTED,HIGHERRANK,100,Animalia,Arthropoda,Insecta,Hymenoptera,Melittidae,match with family
+Osmia,1337664,"Osmia Panzer, 1806",GENUS,ACCEPTED,HIGHERRANK,100,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,match with family
+Stelis,1334181,"Stelis Panzer, 1806",GENUS,ACCEPTED,HIGHERRANK,100,Animalia,Arthropoda,Insecta,Hymenoptera,Megachilidae,match with family
+Trigona,7541754,"Trigona Jurine, 1807",GENUS,ACCEPTED,EXACT,100,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,match with family
+Calliopsis,1356743,"Calliopsis Smith, 1853",GENUS,ACCEPTED,EXACT,100,Animalia,Arthropoda,Insecta,Hymenoptera,Andrenidae,match with family
+Corynura,1352924,"Corynura Spinola, 1851",GENUS,ACCEPTED,EXACT,100,Animalia,Arthropoda,Insecta,Hymenoptera,Halictidae,match with family
+Thyreus,1344814,"Thyreus Panzer, 1806",GENUS,ACCEPTED,HIGHERRANK,100,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,match with family
+Euryglossa,1350218,"Euryglossa Smith, 1853",GENUS,ACCEPTED,EXACT,100,Animalia,Arthropoda,Insecta,Hymenoptera,Colletidae,match with family
+Allodape,1340735,"Allodape Lepeletier & Serville, 1825",GENUS,ACCEPTED,EXACT,100,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,match with family
+Tetrapedia,1345432,"Tetrapedia Klug, 1810",GENUS,ACCEPTED,EXACT,100,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,match with family
+Epicharis,1340165,"Epicharis Klug, 1807",GENUS,ACCEPTED,EXACT,100,Animalia,Arthropoda,Insecta,Hymenoptera,Apidae,match with family

@@ -1,0 +1,105 @@
+family,genus,species,n_records,meets_threshold,retained,reason_if_skipped,modelled
+Apidae,Allodapula,Allodapula melanopus,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Allodapula,Allodapula rozeni,3,FALSE,FALSE,only 3 records,FALSE
+Apidae,Allodapula,Allodapula variegata,2,FALSE,FALSE,only 2 records,FALSE
+Apidae,Amegilla,Amegilla,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Amegilla,Amegilla acraensis,34,TRUE,TRUE,NA,TRUE
+Apidae,Amegilla,Amegilla albocaudata,2,FALSE,FALSE,only 2 records,FALSE
+Apidae,Amegilla,Amegilla antimena,3,FALSE,FALSE,only 3 records,FALSE
+Apidae,Amegilla,Amegilla aspergina,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Amegilla,Amegilla atrocincta,42,TRUE,TRUE,NA,TRUE
+Apidae,Amegilla,Amegilla caelestina,10,FALSE,FALSE,only 10 records,FALSE
+Apidae,Amegilla,Amegilla calens,8,FALSE,FALSE,only 8 records,FALSE
+Apidae,Amegilla,Amegilla capensis,9,FALSE,FALSE,only 9 records,FALSE
+Apidae,Amegilla,Amegilla fallax,12,FALSE,FALSE,only 12 records,FALSE
+Apidae,Amegilla,Amegilla kuleni,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Amegilla,Amegilla mimadvena,8,FALSE,FALSE,only 8 records,FALSE
+Apidae,Amegilla,Amegilla niveata,11,FALSE,FALSE,only 11 records,FALSE
+Apidae,Amegilla,Amegilla nubica,13,FALSE,FALSE,only 13 records,FALSE
+Apidae,Amegilla,Amegilla obscuriceps,4,FALSE,FALSE,only 4 records,FALSE
+Apidae,Amegilla,Amegilla penicula,4,FALSE,FALSE,only 4 records,FALSE
+Apidae,Amegilla,Amegilla punctifrons,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Amegilla,Amegilla spilostoma,12,FALSE,FALSE,only 12 records,FALSE
+Apidae,Amegilla,Amegilla velutina,5,FALSE,FALSE,only 5 records,FALSE
+Apidae,Anthophora,Anthophora armata,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Anthophora,Anthophora auone,2,FALSE,FALSE,only 2 records,FALSE
+Apidae,Anthophora,Anthophora diversipes,2,FALSE,FALSE,only 2 records,FALSE
+Apidae,Anthophora,Anthophora rufolanata,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Anthophora,Anthophora vestita,12,FALSE,FALSE,only 12 records,FALSE
+Apidae,Bombus,Bombus terrestris,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Braunsapis,Braunsapis madecassella,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Ceratina,Ceratina inermis,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Ceratina,Ceratina moerenhouti,4,FALSE,FALSE,only 4 records,FALSE
+Apidae,Ceratina,Ceratina nasalis,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Ceratina,Ceratina rhodura,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Liotrigona,Liotrigona bottegoi,2,FALSE,FALSE,only 2 records,FALSE
+Apidae,Liotrigona,Liotrigona kinzelbachi,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Nomada,Nomada gigas,2,FALSE,FALSE,only 2 records,FALSE
+Apidae,Tetralonia,Tetralonia macrognatha,2,FALSE,FALSE,only 2 records,FALSE
+Apidae,Tetraloniella,Tetraloniella brevikeraia,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Tetraloniella,Tetraloniella tenuifasciata,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Thyreus,Thyreus calceatus,5,FALSE,FALSE,only 5 records,FALSE
+Apidae,Thyreus,Thyreus histrionicus,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Thyreus,Thyreus meripes,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Thyreus,Thyreus pictus,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Thyreus,Thyreus quinquefasciatus,4,FALSE,FALSE,only 4 records,FALSE
+Apidae,Xylocopa,Xylocopa,2,FALSE,FALSE,only 2 records,FALSE
+Apidae,Xylocopa,Xylocopa africana,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Xylocopa,Xylocopa albifrons,2,FALSE,FALSE,only 2 records,FALSE
+Apidae,Xylocopa,Xylocopa caffra,440,TRUE,TRUE,NA,TRUE
+Apidae,Xylocopa,Xylocopa calens,44,TRUE,TRUE,fewer than 100 target-group background cells,FALSE
+Apidae,Xylocopa,Xylocopa capitata,42,TRUE,TRUE,NA,TRUE
+Apidae,Xylocopa,Xylocopa erythrina,4,FALSE,FALSE,only 4 records,FALSE
+Apidae,Xylocopa,Xylocopa fenestrata,4,FALSE,FALSE,only 4 records,FALSE
+Apidae,Xylocopa,Xylocopa flavicollis,107,TRUE,TRUE,NA,TRUE
+Apidae,Xylocopa,Xylocopa flavorufa,213,TRUE,TRUE,NA,TRUE
+Apidae,Xylocopa,Xylocopa hottentotta,2,FALSE,FALSE,only 2 records,FALSE
+Apidae,Xylocopa,Xylocopa inconstans,113,TRUE,TRUE,NA,TRUE
+Apidae,Xylocopa,Xylocopa io,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Xylocopa,Xylocopa isabelleae,2,FALSE,FALSE,only 2 records,FALSE
+Apidae,Xylocopa,Xylocopa lateritia,8,FALSE,FALSE,only 8 records,FALSE
+Apidae,Xylocopa,Xylocopa lugubris,15,FALSE,FALSE,only 15 records,FALSE
+Apidae,Xylocopa,Xylocopa mixta,5,FALSE,FALSE,only 5 records,FALSE
+Apidae,Xylocopa,Xylocopa nigrita,62,TRUE,TRUE,NA,TRUE
+Apidae,Xylocopa,Xylocopa olivacea,2,FALSE,FALSE,only 2 records,FALSE
+Apidae,Xylocopa,Xylocopa pubescens,1,FALSE,FALSE,only 1 records,FALSE
+Apidae,Xylocopa,Xylocopa rufitarsis,7,FALSE,FALSE,only 7 records,FALSE
+Apidae,Xylocopa,Xylocopa scioensis,7,FALSE,FALSE,only 7 records,FALSE
+Apidae,Xylocopa,Xylocopa senior,17,FALSE,FALSE,only 17 records,FALSE
+Apidae,Xylocopa,Xylocopa virginica,3,FALSE,FALSE,only 3 records,FALSE
+Apidae,Xylocopa,Xylocopa watmoughi,30,TRUE,TRUE,NA,TRUE
+Colletidae,Euryglossina,Euryglossina argocephala,1,FALSE,FALSE,only 1 records,FALSE
+Colletidae,Euryglossina,Euryglossina hypochroma,1,FALSE,FALSE,only 1 records,FALSE
+Colletidae,Hylaeus,Hylaeus euxanthus,5,FALSE,FALSE,only 5 records,FALSE
+Colletidae,Hylaeus,Hylaeus heraldicus,6,FALSE,FALSE,only 6 records,FALSE
+Halictidae,Ceylalictus,Ceylalictus muiri,3,FALSE,FALSE,only 3 records,FALSE
+Halictidae,Halictus,Halictus centrosus,1,FALSE,FALSE,only 1 records,FALSE
+Halictidae,Halictus,Halictus jucundus,19,FALSE,FALSE,only 19 records,FALSE
+Halictidae,Halictus,Halictus ligatus,5,FALSE,FALSE,only 5 records,FALSE
+Halictidae,Lasioglossum,Lasioglossum comorense,1,FALSE,FALSE,only 1 records,FALSE
+Halictidae,Lipotriches,Lipotriches bigibba,4,FALSE,FALSE,only 4 records,FALSE
+Halictidae,Lipotriches,Lipotriches fimbriata,1,FALSE,FALSE,only 1 records,FALSE
+Halictidae,Lipotriches,Lipotriches rubella,1,FALSE,FALSE,only 1 records,FALSE
+Halictidae,Lipotriches,Lipotriches sjoestedti,1,FALSE,FALSE,only 1 records,FALSE
+Halictidae,Nomia,Nomia elephas,1,FALSE,FALSE,only 1 records,FALSE
+Halictidae,Nomia,Nomia scutellaris,1,FALSE,FALSE,only 1 records,FALSE
+Megachilidae,Anthidiellum,Anthidiellum sternale,1,FALSE,FALSE,only 1 records,FALSE
+Megachilidae,Anthidium,Anthidium niveocinctum,2,FALSE,FALSE,only 2 records,FALSE
+Megachilidae,Anthidium,Anthidium pontis,1,FALSE,FALSE,only 1 records,FALSE
+Megachilidae,Anthidium,Anthidium severini,1,FALSE,FALSE,only 1 records,FALSE
+Megachilidae,Coelioxys,Coelioxys madagascariensis,1,FALSE,FALSE,only 1 records,FALSE
+Megachilidae,Coelioxys,Coelioxys torridus,1,FALSE,FALSE,only 1 records,FALSE
+Megachilidae,Lithurgus,Lithurgus spiniferus,2,FALSE,FALSE,only 2 records,FALSE
+Megachilidae,Megachile,Megachile basalis,1,FALSE,FALSE,only 1 records,FALSE
+Megachilidae,Megachile,Megachile bucephala,2,FALSE,FALSE,only 2 records,FALSE
+Megachilidae,Megachile,Megachile chrysorrhoea,32,TRUE,TRUE,NA,TRUE
+Megachilidae,Megachile,Megachile discolor,3,FALSE,FALSE,only 3 records,FALSE
+Megachilidae,Megachile,Megachile fulvohirta,1,FALSE,FALSE,only 1 records,FALSE
+Megachilidae,Megachile,Megachile maxillosa,44,TRUE,TRUE,NA,TRUE
+Megachilidae,Megachile,Megachile nasicornis,1,FALSE,FALSE,only 1 records,FALSE
+Megachilidae,Megachile,Megachile piliceps,1,FALSE,FALSE,only 1 records,FALSE
+Megachilidae,Megachile,Megachile rufipennis,1,FALSE,FALSE,only 1 records,FALSE
+Megachilidae,Megachile,Megachile rufiventris,5,FALSE,FALSE,only 5 records,FALSE
+Megachilidae,Megachile,Megachile venusta,3,FALSE,FALSE,only 3 records,FALSE
+Megachilidae,Megachile,Megachile waterbergensis,1,FALSE,FALSE,only 1 records,FALSE
+Melittidae,Melitta,Melitta arrogans,1,FALSE,FALSE,only 1 records,FALSE
